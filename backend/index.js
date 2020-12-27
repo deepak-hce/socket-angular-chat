@@ -1,12 +1,15 @@
 const { info } = require('console');
 const express = require('express');
 const app = express();
+const cors = require('cors')
+app.use(cors());
 app.use(express.json()); //Used to parse JSON bodies
 app.use(express.urlencoded({ extended: true })); //Parse URL-encoded bodies
 const models = require('./models');
 const http = require('http').createServer(app);
 const { User } = require('./models');
 const { message } = require('./models');
+const userRoutes = require('./routes/users');
 
 const io = require('socket.io')(http, {
   cors: {
@@ -23,9 +26,11 @@ models.sequelize.sync().then(res => {
 
 
 let totalConnectedUsers = 0;
-app.get('/', (req, res) => {
-  res.send('<h1>Hey Socket.io</h1>');
-});
+// app.get('/', (req, res) => {
+//   res.send('<h1>Hey Socket.io</h1>');
+// });
+
+app.use('/users', userRoutes);
 
 
 io.on('connection', (socket) => {
@@ -63,9 +68,12 @@ io.on('connection', (socket) => {
     message.create({ senderId: data.senderId, receiverId: data.receiverId, message: data.message}).then((res => {
         io.emit('newMessage', data);
     }));
-
   })
+});
 
+
+app.use((req, res, next)=>{
+  return res.status(404).send({status: false, comments :"API Endpoint not found."});
 });
 
 http.listen(3000, () => {
